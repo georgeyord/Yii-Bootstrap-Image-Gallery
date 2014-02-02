@@ -39,15 +39,18 @@ class BlueimpGallery extends CWidget {
      * </ul>
      * @param string $id
      */
-    public function run($items, $options = array(), $id = null) {
-        $this->preparePlugin($items, $options, $id);
+    public function run($items, $options = array(), $id = null, $return = false) {
+        $return = $this->preparePlugin($items, $options, $id, $return);
 
         $script = new CJavaScriptExpression(sprintf('var %s = blueimp.Gallery(%s,%s);', $id, json_encode($items), json_encode($options)), CJavaScript::encode($options));
         Yii::app()->clientScript->registerScript($id, $script, CClientScript::POS_END);
+
+        return $return;
     }
 
     /**
-     * Initialize a widget instance and return the JS trigger
+     *
+     * Initialize a widget instance and render an Element
      *
      * @param array $items to add to gallery
      * @param array $options plugin options.
@@ -60,12 +63,26 @@ class BlueimpGallery extends CWidget {
      * <li>cover: boolean value to set stretchImages to 'cover'</li>
      * </ul>
      * @param string $id
+     * @param string $tag
+     * @param array $tagOptions
+     * @param array $tagContent
+     * @return string
      */
-    public function getTrigger($items, $options = array(), $id = null) {
-        $this->preparePlugin($items, $options, $id);
+    public function renderElement($items, $options = array(), $id = null, $tag = 'a', $tagOptions = array(), $tagContent = false) {
+        $return = $this->preparePlugin($items, $options, $id);
 
         $script = new CJavaScriptExpression(sprintf('blueimp.Gallery(%s,%s);', json_encode($items), json_encode($options)), CJavaScript::encode($options));
-        return $script;
+
+        $attr = 'href';
+        $tagOptions['onclick'] = $script;
+
+        if ($tag == 'htmlButton') {
+            $tag = $tagOptions['type'] = 'button';
+        }
+        if (!$tagContent)
+            $tagContent = BGArray::popValue('label', $tagOptions, 'button');
+
+        return CHtml::tag($tag, $tagOptions, $tagContent);
     }
 
     /**
@@ -75,7 +92,7 @@ class BlueimpGallery extends CWidget {
      * @param array $options
      * @param string $id
      */
-    private function preparePlugin(&$items, &$options, &$id) {
+    private function preparePlugin(&$items, &$options, &$id, $return = false) {
         if ($id === null)
             $id = uniqid(__CLASS__);
 
@@ -83,7 +100,6 @@ class BlueimpGallery extends CWidget {
         $controls = BGArray::popValue('controls', $options, true);
         $slideshow = BGArray::popValue('slideshow', $options, false);
         $indicator = BGArray::popValue('indicator', $options, false);
-        $this->renderSnippet($id, $type, $controls, $slideshow, $indicator);
 
         foreach ($items as $key => $item) {
             if (!is_array($item))
@@ -91,6 +107,7 @@ class BlueimpGallery extends CWidget {
         }
 
         $options = self::defaultOptions($id, $type, $options);
+        return $this->renderSnippet($id, $type, $controls, $slideshow, $indicator, $return);
     }
 
     /**
@@ -104,8 +121,7 @@ class BlueimpGallery extends CWidget {
         if ($blueimpUrl) {
             Yii::app()->clientScript->registerCSSFile($blueimpUrl . '/css/blueimp-gallery.min.css');
             Yii::app()->clientScript->registerScriptFile($blueimpUrl . '/js/jquery.blueimp-gallery.min.js', CClientScript::POS_END);
-        }
-        else
+        } else
             throw new Exception('Path "' . $blueimpPath . '" is not valid');
 
         // Bootstrap-Image-Gallery
@@ -115,8 +131,7 @@ class BlueimpGallery extends CWidget {
         if ($bsUrl) {
             Yii::app()->clientScript->registerCSSFile($bsUrl . '/css/bootstrap-image-gallery.css');
             Yii::app()->clientScript->registerScriptFile($bsUrl . '/js/bootstrap-image-gallery.js', CClientScript::POS_END);
-        }
-        else
+        } else
             throw new Exception('Path "' . $bsUrl . '" is not valid');
     }
 
@@ -129,13 +144,13 @@ class BlueimpGallery extends CWidget {
      * @param bool $slideshow
      * @param bool $indicator
      */
-    public function renderSnippet($id, $type, $controls, $slideshow, $indicator) {
-        $this->render($type, array(
-            'id' => $id,
-            'controls' => $controls,
-            'slideshow' => $slideshow,
-            'indicator' => $indicator,
-        ));
+    public function renderSnippet($id, $type, $controls, $slideshow, $indicator, $return = false) {
+        return $this->render($type, array(
+                    'id' => $id,
+                    'controls' => $controls,
+                    'slideshow' => $slideshow,
+                    'indicator' => $indicator,
+                        ), $return);
     }
 
     /**
