@@ -38,6 +38,8 @@ class BlueimpGallery extends CWidget {
      * <li>cover: boolean value to set stretchImages to 'cover'</li>
      * </ul>
      * @param string $id
+     * @param bool $return
+     * @return bool|string|void
      */
     public function run($items, $options = array(), $id = null, $return = false) {
         $return = $this->preparePlugin($items, $options, $id, $return);
@@ -65,24 +67,22 @@ class BlueimpGallery extends CWidget {
      * @param string $id
      * @param string $tag
      * @param array $tagOptions
-     * @param array $tagContent
+     * @param array|bool $tagContent
      * @return string
      */
     public function renderElement($items, $options = array(), $id = null, $tag = 'a', $tagOptions = array(), $tagContent = false) {
-        $return = $this->preparePlugin($items, $options, $id);
+        $return = $this->preparePlugin($items, $options, $id, true);
 
         $script = new CJavaScriptExpression(sprintf('blueimp.Gallery(%s,%s);', json_encode($items), json_encode($options)), CJavaScript::encode($options));
-
-        $attr = 'href';
         $tagOptions['onclick'] = $script;
 
         if ($tag == 'htmlButton') {
             $tag = $tagOptions['type'] = 'button';
         }
         if (!$tagContent)
-            $tagContent = BGArray::popValue('label', $tagOptions, 'button');
+            $tagContent = BGArray::popValue('label', $tagOptions, 'Show gallery');
 
-        return CHtml::tag($tag, $tagOptions, $tagContent);
+        return $return. CHtml::tag($tag, $tagOptions, $tagContent);
     }
 
     /**
@@ -91,6 +91,8 @@ class BlueimpGallery extends CWidget {
      * @param array $items
      * @param array $options
      * @param string $id
+     * @param bool $return
+     * @return string HTML
      */
     private function preparePlugin(&$items, &$options, &$id, $return = false) {
         if ($id === null)
@@ -111,7 +113,7 @@ class BlueimpGallery extends CWidget {
     }
 
     /**
-     * @return string the url to the widget's assets folder
+     * Registers and publish assets needed
      */
     private function registerFiles() {
         // Bootstrap-Image-Gallery
@@ -143,6 +145,8 @@ class BlueimpGallery extends CWidget {
      * @param bool $controls
      * @param bool $slideshow
      * @param bool $indicator
+     * @param bool $return
+     * @return string
      */
     public function renderSnippet($id, $type, $controls, $slideshow, $indicator, $return = false) {
         return $this->render($type, array(
